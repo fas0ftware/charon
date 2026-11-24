@@ -1,6 +1,6 @@
 # Charon
 
-![Version](https://img.shields.io/badge/version-0.2.0-blue)
+![Version](https://img.shields.io/badge/version-0.3.0-blue)
 ![Rust](https://img.shields.io/badge/rust-1.75%2B-orange)
 ![TLS](https://img.shields.io/badge/TLS-rustls%200.23-informational)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -28,6 +28,22 @@ Done: everything was downloaded.
 |---|---|
 | ![Download page](docs/send.png) | ![Upload page, dark theme](docs/receive-dark.png) |
 
+## The window: `charon app`
+
+No terminal needed: `charon app` opens a window on this computer (127.0.0.1)
+where you drop files, optionally write a note, pick how long and how often, and
+press **Share**. The QR code, the link and what has been received appear in
+the window; **Stop sharing** ends it at once. Files wait in a private folder in
+`$XDG_RUNTIME_DIR` (memory, `0700`) that is removed when the window closes.
+
+| Pick | Share |
+|---|---|
+| ![Charon window: two files picked and an empty note](docs/app-pick.png) | ![Charon window: QR code, link, the note received and a photo waiting](docs/app-share.png) |
+
+The window's API only answers requests with an `X-Charon: 1` header and a
+local `Host`, so a web page you visit cannot add files or start a share
+through your browser.
+
 ## Use
 
 ```sh
@@ -36,6 +52,7 @@ charon receive                 # a page where the phone can send files to ~/Down
 charon receive ~/Inbox --uploads 1   # ... into ~/Inbox, and stop after one file
 charon send --text -           # a note shown once: type it, Ctrl+D (stays out of your shell history)
 echo "$WIFI_PASSWORD" | charon send --text - photo.jpg   # a note next to files
+charon app                     # the window (127.0.0.1:8766)
 charon fingerprint             # this machine's certificate fingerprint
 ```
 
@@ -97,7 +114,7 @@ choose).
 ## Tests
 
 ```sh
-cargo test        # 14 tests
+cargo test        # 18 tests
 cargo clippy --all-targets -- -D warnings
 ```
 
@@ -119,6 +136,7 @@ body, and 30 wrong links. CI also shares a file over TLS with `curl` and runs
 
 ## Changelog
 
+- **0.3.0** – `charon app`: a window to pick files, write a note and share with the QR code on screen, live progress, stop button. Also a CSS fix: the `hidden` attribute was overridden by the button style.
 - **0.2.0** – `charon send --text TEXT` (or `--text -` from standard input): a note shown once behind a *Show* button, never written to disk and never part of the page itself; can go next to files. PEM files are read with rustls-pki-types (rustls-pemfile is unmaintained).
 - **0.1.0** – One-time, expiring TLS links for files with a QR code; an upload page the other way round.
 

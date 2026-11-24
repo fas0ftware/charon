@@ -19,3 +19,21 @@ input[type=file] { flex: 1 1 14rem; font: inherit; font-size: 14px; color: var(-
 .foot { margin-top: 28px; color: var(--muted); font-size: 13px; }
 pre.secret { grid-column: 1 / -1; margin: 6px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--bg); border: 1px dashed var(--accent); font: 15px/1.4 ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; user-select: all; }
 button.btn:disabled { opacity: .6; }
+body.app main { max-width: 46rem; }
+body.app h1 small { font-size: 13px; font-weight: 400; margin-left: 6px; }
+.drop { display: grid; place-items: center; gap: 4px; padding: 30px 16px; border: 2px dashed var(--line); border-radius: 14px; background: var(--panel); cursor: pointer; text-align: center; margin-bottom: 12px; }
+.drop.over { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--panel)); }
+label.note { display: grid; gap: 4px; font-size: 14px; color: var(--muted); margin: 8px 0 12px; }
+textarea, select { font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; } .row label { font-size: 14px; color: var(--muted); }
+.row select { padding: 4px 8px; margin-left: 4px; }
+button.ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+button.danger { background: var(--bad); }
+.qrbox { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+#qr { background: #fff; border-radius: 10px; padding: 6px; } #qr.spent { opacity: .25; }
+.mono { font-family: ui-monospace, monospace; font-size: 13px; overflow-wrap: anywhere; color: var(--accent); }
+.small { font-size: 12px; }
+ol.log { list-style: none; padding: 0; margin: 0; font: 13px ui-monospace, monospace; color: var(--muted); }
+ol.log li { padding: 3px 0; overflow-wrap: anywhere; }
+[hidden] { display: none !important; }   /* the button rules above must not undo the hidden attribute */
+.qrbox > div { flex: 1 1 16rem; min-width: 0; }

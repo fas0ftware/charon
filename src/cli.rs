@@ -18,6 +18,7 @@ usage:
   charon send FILE... [--minutes 10] [--downloads 1]
   charon send --text TEXT | --text -   [FILE...]
   charon receive [DIR] [--minutes 10] [--max-size 2G] [--uploads N]
+  charon app [--port N]          a window on this machine: pick files, write a note, share with a QR code
   charon fingerprint
   common: [--port 8765] [--http] [--bind ADDRESS]
 
@@ -64,7 +65,7 @@ pub fn parse(argv: &[String]) -> Result<Args, String> {
     };
     while let Some(x) = it.next() {
         match x.as_str() {
-            "send" | "receive" | "fingerprint" if a.cmd.is_empty() => a.cmd = x.clone(),
+            "send" | "receive" | "fingerprint" | "app" if a.cmd.is_empty() => a.cmd = x.clone(),
             "-h" | "--help" => a.cmd = "help".into(),
             "-V" | "--version" => a.cmd = "version".into(),
             "--minutes" => a.minutes = num(it.next(), "--minutes")?.min(24 * 60),
@@ -151,6 +152,24 @@ pub fn run(argv: &[String]) -> i32 {
             return 0;
         }
         _ => {}
+    }
+    if a.cmd == "app" {
+        let bind = a.bind.unwrap_or(IpAddr::V4(Ipv4Addr::UNSPECIFIED));
+        let app = match crate::app::App::new(bind, 8765, !a.http) {
+            Ok(app) => Arc::new(app),
+            Err(e) => {
+                eprintln!("charon: {e}");
+                return 1;
+            }
+        };
+        let port = if a.port == 8765 { 8766 } else { a.port };   // the window, not the share
+        return match crate::app::serve(app, port) {
+            Ok(()) => 0,
+            Err(e) => {
+                eprintln!("charon: {e}");
+                1
+            }
+        };
     }
     let ip = a.bind.filter(|b| !b.is_unspecified()).or_else(lan_ip);
     let ips: Vec<IpAddr> = ip.into_iter().collect();

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Charon</title>
+<link rel="stylesheet" href="/s/style.css">
+<script src="/s/app.js" defer></script>
+</head>
+<body class="app">
+<main>
+  <h1><span class="logo">⛵</span> Charon <small class="muted">files across your own network</small></h1>
+  <section id="pick">
+    <label id="drop" class="drop" for="files">
+      <b>Drop files here</b><span class="muted">or click to choose</span>
+      <input id="files" type="file" multiple hidden>
+    </label>
+    <ul id="staged" class="files"></ul>
+    <label class="note">Note shown once (optional, e.g. a Wi-Fi password)
+      <textarea id="text" rows="2" maxlength="65536" spellcheck="false" autocomplete="off"></textarea></label>
+    <div class="row">
+      <label>Link works for <select id="minutes"><option value="5">5 min</option><option value="10" selected>10 min</option><option value="30">30 min</option><option value="60">1 hour</option></select></label>
+      <label>Each item <select id="downloads"><option value="1" selected>once</option><option value="2">twice</option><option value="5">5 times</option></select></label>
+      <button id="go" type="button">Share</button>
+      <button id="clear" type="button" class="ghost">Clear</button>
+    </div>
+    <p id="msg" class="muted" role="status"></p>
+  </section>
+  <section id="sharing" hidden>
+    <div class="qrbox">
+      <img id="qr" alt="QR code of the link" width="260" height="260">
+      <div>
+        <p class="lead">Scan with the phone, or open:</p>
+        <p><a id="url" class="mono" target="_blank" rel="noopener noreferrer"></a></p>
+        <p class="muted small" id="fp"></p>
+        <p id="left" class="muted"></p>
+        <button id="stop" type="button" class="danger">Stop sharing</button>
+        <button id="again" type="button" hidden>New share</button>
+      </div>
+    </div>
+    <ul id="items" class="files"></ul>
+    <ol id="log" class="log"></ol>
+  </section>
+</main>
+</body>
+</html>

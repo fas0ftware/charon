@@ -1,6 +1,6 @@
 [package]
 name = "charon"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 description = "Send files between devices on your own network: one-time, expiring, TLS links with a QR code. No cloud."
 license = "MIT"
@@ -11,7 +11,7 @@ rustls = { version = "0.23", default-features = false, features = ["ring", "std"
 rcgen = { version = "0.13", default-features = false, features = ["crypto", "ring", "pem"] }
 rustls-pki-types = { version = "1.9", features = ["std"] }
 ring = "0.17"
-qrcode = { version = "0.14", default-features = false }
+qrcode = { version = "0.14", default-features = false, features = ["svg"] }
 
 [profile.release]
 lto = true

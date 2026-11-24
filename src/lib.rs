@@ -1,5 +1,6 @@
 //! Charon: carry files across your own network with one-time, expiring, TLS links.
 
+pub mod app;
 pub mod cli;
 pub mod http;
 pub mod server;
