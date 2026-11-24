@@ -17,7 +17,7 @@ TLS certificate (this machine's): SHA-256 04:E4:F6:17:83:8F:64:B6:44:D4:…
 Sharing 2 file(s), 483.0 KB, for 10 min; each can be downloaded 1 time(s).
 
   (QR code)
-https://192.168.1.6:8765/811f14d1752cf611e677bea6169cc59f/
+https://192.168.1.10:8765/811f14d1752cf611e677bea6169cc59f/
 
 19:52:10 UTC  192.168.1.23 downloaded Tatil fotoğrafları.zip (3.0 KB)
 19:52:14 UTC  192.168.1.23 downloaded rapor-2026.pdf (480.0 KB)
