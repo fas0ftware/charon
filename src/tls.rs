@@ -8,6 +8,7 @@ use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use rustls::pki_types::pem::PemObject;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer};
 
 pub fn data_dir() -> PathBuf {
@@ -46,9 +47,9 @@ pub fn identity(dir: &Path, ips: &[IpAddr]) -> io::Result<Identity> {
     let stored: Vec<String> = fs::read_to_string(&ips_path).map(|t| t.lines().map(String::from).collect()).unwrap_or_default();
     if want.iter().all(|i| stored.contains(i)) {
         if let (Ok(c), Ok(k)) = (fs::read(&cert_path), fs::read(&key_path)) {
-            let cert = rustls_pemfile::certs(&mut &c[..]).next();
-            let key = rustls_pemfile::private_key(&mut &k[..]);
-            if let (Some(Ok(cert)), Ok(Some(key))) = (cert, key) {
+            let cert = CertificateDer::from_pem_slice(&c);
+            let key = PrivateKeyDer::from_pem_slice(&k);
+            if let (Ok(cert), Ok(key)) = (cert, key) {
                 return Ok(Identity { cert, key, created: false });
             }
         }

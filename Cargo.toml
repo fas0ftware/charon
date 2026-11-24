@@ -9,7 +9,7 @@ rust-version = "1.75"
 [dependencies]
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
 rcgen = { version = "0.13", default-features = false, features = ["crypto", "ring", "pem"] }
-rustls-pemfile = "2"
+rustls-pki-types = { version = "1.9", features = ["std"] }
 ring = "0.17"
 qrcode = { version = "0.14", default-features = false }
 
