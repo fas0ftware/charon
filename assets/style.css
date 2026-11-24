@@ -17,3 +17,5 @@ progress { width: 100%; accent-color: var(--accent); }
 form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
 input[type=file] { flex: 1 1 14rem; font: inherit; font-size: 14px; color: var(--text); }
 .foot { margin-top: 28px; color: var(--muted); font-size: 13px; }
+pre.secret { grid-column: 1 / -1; margin: 6px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--bg); border: 1px dashed var(--accent); font: 15px/1.4 ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; user-select: all; }
+button.btn:disabled { opacity: .6; }

@@ -141,10 +141,28 @@ fn left(s: &Share) -> String {
 fn index(s: &Share) -> Vec<u8> {
     match &s.mode {
         Mode::Send(files) => {
-            let total: u64 = files.iter().map(|f| f.size).sum();
+            let total: u64 = files.iter().filter(|f| f.text.is_none()).map(|f| f.size).sum();
+            let real = files.iter().filter(|f| f.text.is_none()).count();
+            let what = match (files.len() - real, real) {
+                (0, n) => format!("{n} file(s), {}", human(total)),
+                (_, 0) => "A note".to_string(),
+                (_, n) => format!("A note and {n} file(s), {}", human(total)),
+            };
             let mut list = String::new();
             for (i, f) in files.iter().enumerate() {
                 let remaining = s.max_downloads.saturating_sub(f.started);
+                if f.text.is_some() {
+                    // The note is never in the page: it is fetched only when "Show" is pressed, so a
+                    // link preview or a crawler that opens the page cannot use it up.
+                    let action = if remaining > 0 {
+                        format!("<button class=\"btn reveal\" type=\"button\" data-i=\"{i}\">Show</button>")
+                    } else {
+                        "<span class=\"muted\">already shown</span>".into()
+                    };
+                    list += &format!("<li class=\"note\"><span class=\"name\">Note</span><span class=\"muted\">{} character(s)</span>{action}\
+                                      <pre class=\"secret\" id=\"note-{i}\" hidden></pre></li>", f.text.as_ref().map(|t| t.chars().count()).unwrap_or(0));
+                    continue;
+                }
                 let link = if remaining > 0 {
                     format!("<a class=\"btn\" href=\"f/{i}\" download>Download</a>")
                 } else {
@@ -153,15 +171,7 @@ fn index(s: &Share) -> Vec<u8> {
                 list += &format!("<li><span class=\"name\">{}</span><span class=\"muted\">{}</span>{link}</li>", html_escape(&f.name), human(f.size));
             }
             let each = if s.max_downloads == 1 { "once".to_string() } else { format!("{} times", s.max_downloads) };
-            page(
-                "Download",
-                &format!(
-                    "<p class=\"lead\">{} file(s), {}. Each can be downloaded {each}; the link ends in {}.</p><ul class=\"files\">{list}</ul>",
-                    files.len(),
-                    human(total),
-                    left(s)
-                ),
-            )
+            page("Download", &format!("<p class=\"lead\">{what}. Each can be opened {each}; the link ends in {}.</p><ul class=\"files\">{list}</ul>", left(s)))
         }
         Mode::Receive { max_size, received, .. } => page(
             "Send files",
@@ -182,6 +192,18 @@ fn download(i: Option<usize>, r: &mut BufReader<Box<dyn Conn>>, peer: SocketAddr
     let Some(f) = lock(share).start_download(i) else {
         return http::respond(r.get_mut(), 410, "Gone", "text/html; charset=utf-8", &page("Already downloaded", "<p>This file was already downloaded.</p>"));
     };
+    if let Some(text) = &f.text {
+        let w = r.get_mut();
+        let result = http::write_head(w, 200, "OK", &[("Content-Type", "text/plain; charset=utf-8".into())], text.len() as u64)
+            .and_then(|_| w.write_all(text.as_bytes()))
+            .and_then(|_| w.flush());
+        lock(share).end_download(i, result.is_ok());
+        match &result {
+            Ok(()) => log(&format!("{} was shown the note", peer.ip())),
+            Err(e) => log(&format!("{}: showing the note failed ({e}); it can be tried again", peer.ip())),
+        }
+        return result;
+    }
     let result = (|| -> io::Result<()> {
         let mut file = std::fs::File::open(&f.path)?;
         let size = file.metadata()?.len();

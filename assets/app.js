@@ -30,7 +30,29 @@ function send(file, row) {
   });
 }
 
+// Download page: a note is fetched only when "Show" is pressed (that uses up the link).
+async function reveal(btn) {
+  btn.disabled = true;
+  const pre = document.getElementById(`note-${btn.dataset.i}`);
+  try {
+    const r = await fetch(`f/${btn.dataset.i}`, { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status === 410 ? "already shown" : `error ${r.status}`);
+    pre.textContent = await r.text();
+    pre.hidden = false;
+    const copy = el("button", "Copy", "btn");
+    copy.type = "button";
+    copy.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(pre.textContent); copy.textContent = "Copied"; }
+      catch (_) { const s = window.getSelection(); const range = document.createRange(); range.selectNodeContents(pre); s.removeAllRanges(); s.addRange(range); copy.textContent = "Selected: copy it"; }
+    });
+    btn.replaceWith(copy);
+  } catch (e) {
+    btn.replaceWith(el("span", e.message, "muted"));
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+  for (const b of document.querySelectorAll("button.reveal")) b.addEventListener("click", () => reveal(b));
   const form = document.getElementById("up");
   if (!form) return;
   const list = document.getElementById("progress");

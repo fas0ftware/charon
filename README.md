@@ -1,6 +1,6 @@
 # Charon
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue)
+![Version](https://img.shields.io/badge/version-0.2.0-blue)
 ![Rust](https://img.shields.io/badge/rust-1.75%2B-orange)
 ![TLS](https://img.shields.io/badge/TLS-rustls%200.23-informational)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -34,6 +34,8 @@ Done: everything was downloaded.
 charon send FILE...            # share files: scan the QR code with the phone
 charon receive                 # a page where the phone can send files to ~/Downloads/Charon
 charon receive ~/Inbox --uploads 1   # ... into ~/Inbox, and stop after one file
+charon send --text -           # a note shown once: type it, Ctrl+D (stays out of your shell history)
+echo "$WIFI_PASSWORD" | charon send --text - photo.jpg   # a note next to files
 charon fingerprint             # this machine's certificate fingerprint
 ```
 
@@ -53,6 +55,10 @@ charon fingerprint             # this machine's certificate fingerprint
   generator, compared in constant time. Every other URL answers *404*, and
   after **30 requests with a wrong link** the share closes itself: someone on
   the network may be guessing.
+- **A note is never in the page.** `--text` keeps it in memory only; the page
+  shows a *Show* button and the note is fetched when it is pressed, so a chat
+  app's link preview or a crawler that opens the page cannot use it up. Once
+  shown, it is gone (`--downloads` times).
 - **Short-lived.** The link stops working after `--minutes` or once every file
   was downloaded `--downloads` times, and the program exits. Nothing keeps
   listening in the background.
@@ -91,7 +97,7 @@ choose).
 ## Tests
 
 ```sh
-cargo test        # 13 tests
+cargo test        # 14 tests
 cargo clippy --all-targets -- -D warnings
 ```
 
@@ -107,9 +113,14 @@ body, and 30 wrong links. CI also shares a file over TLS with `curl` and runs
 
 ## Roadmap
 
-- `charon send --text "..."`: share a note or a password once, shown on the page.
+- ~~`charon send --text`~~: done in 0.2.
 - A folder as one `.zip`, streamed.
 - Local time in the log (now UTC, to stay free of a time-zone database).
+
+## Changelog
+
+- **0.2.0** – `charon send --text TEXT` (or `--text -` from standard input): a note shown once behind a *Show* button, never written to disk and never part of the page itself; can go next to files. PEM files are read with rustls-pki-types (rustls-pemfile is unmaintained).
+- **0.1.0** – One-time, expiring TLS links for files with a QR code; an upload page the other way round.
 
 ## License
 

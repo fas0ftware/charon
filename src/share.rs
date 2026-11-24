@@ -17,7 +17,11 @@ pub struct SharedFile {
     pub size: u64,
     pub started: u32, // downloads in progress or finished
     pub finished: u32,
+    /// A note shared with --text: kept in memory only, never written to disk.
+    pub text: Option<std::sync::Arc<String>>,
 }
+
+pub const MAX_TEXT: usize = 64 * 1024;
 
 #[derive(Debug)]
 pub enum Mode {
@@ -134,9 +138,23 @@ impl Share {
                 return Err(io::Error::new(io::ErrorKind::InvalidInput, format!("{} is not a file", p.display())));
             }
             let name = safe_name(&p.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default());
-            files.push(SharedFile { path: p.clone(), name, size: meta.len(), started: 0, finished: 0 });
+            files.push(SharedFile { path: p.clone(), name, size: meta.len(), started: 0, finished: 0, text: None });
         }
         Ok(Share::with(Mode::Send(files), minutes, max_downloads))
+    }
+
+    /// A note (a password, an address) shown once on the page, optionally next to files.
+    pub fn send_text(text: String, paths: &[PathBuf], minutes: u64, max_downloads: u32) -> io::Result<Share> {
+        if text.is_empty() || text.len() > MAX_TEXT {
+            return Err(io::Error::new(io::ErrorKind::InvalidInput, format!("the text must be 1 byte to {} KB", MAX_TEXT / 1024)));
+        }
+        let mut share = Share::send(paths, minutes, max_downloads)?;
+        if let Mode::Send(files) = &mut share.mode {
+            let note = SharedFile { path: PathBuf::new(), name: "Note".into(), size: text.len() as u64, started: 0, finished: 0,
+                                    text: Some(std::sync::Arc::new(text)) };
+            files.insert(0, note);
+        }
+        Ok(share)
     }
 
     pub fn receive(dir: PathBuf, minutes: u64, max_size: u64, max_uploads: u32) -> Share {

@@ -16,11 +16,14 @@ const HELP: &str = "charon: send files between devices on your own network. No c
 
 usage:
   charon send FILE... [--minutes 10] [--downloads 1]
+  charon send --text TEXT | --text -   [FILE...]
   charon receive [DIR] [--minutes 10] [--max-size 2G] [--uploads N]
   charon fingerprint
   common: [--port 8765] [--http] [--bind ADDRESS]
 
   send         share files; the link works --downloads times per file, for --minutes, then Charon exits
+               --text shares a note shown once on the page (- reads it from standard input,
+               so a password does not end up in your shell history)
   receive      open a page where a phone or another computer can send files here
                (default DIR: ~/Downloads/Charon; --uploads N exits after N files)
   fingerprint  show this machine's certificate fingerprint (to compare with the browser's)
@@ -30,6 +33,7 @@ usage:
 pub struct Args {
     pub cmd: String,
     pub files: Vec<PathBuf>,
+    pub text: Option<String>,
     pub dir: Option<PathBuf>,
     pub minutes: u64,
     pub downloads: u32,
@@ -44,6 +48,7 @@ pub fn parse(argv: &[String]) -> Result<Args, String> {
     let mut a = Args {
         cmd: String::new(),
         files: vec![],
+        text: None,
         dir: None,
         minutes: 10,
         downloads: 1,
@@ -69,6 +74,7 @@ pub fn parse(argv: &[String]) -> Result<Args, String> {
             "--max-size" => a.max_size = it.next().and_then(|s| share::parse_size(s)).filter(|n| *n > 0).ok_or("--max-size needs a size like 500M or 2G")?,
             "--bind" => a.bind = Some(it.next().and_then(|s| s.parse().ok()).ok_or("--bind needs an IP address")?),
             "--http" => a.http = true,
+            "--text" => a.text = Some(it.next().cloned().ok_or("--text needs the text, or - to read it from standard input")?),
             s if s.starts_with('-') => return Err(format!("unknown option {s:?} (see charon --help)")),
             path if a.cmd == "send" => a.files.push(PathBuf::from(path)),
             path if a.cmd == "receive" && a.dir.is_none() => a.dir = Some(PathBuf::from(path)),
@@ -78,8 +84,8 @@ pub fn parse(argv: &[String]) -> Result<Args, String> {
     if a.cmd.is_empty() {
         a.cmd = "help".into();
     }
-    if a.cmd == "send" && a.files.is_empty() {
-        return Err("send needs at least one file".into());
+    if a.cmd == "send" && a.files.is_empty() && a.text.is_none() {
+        return Err("send needs a file or --text".into());
     }
     Ok(a)
 }
@@ -98,6 +104,23 @@ pub fn qr(text: &str) -> String {
         Ok(code) => code.render::<Dense1x2>().dark_color(Dense1x2::Light).light_color(Dense1x2::Dark).quiet_zone(true).build(),
         Err(_) => String::new(),
     }
+}
+
+/// The --text value, or standard input for "-" (one trailing newline removed, like `echo` adds).
+pub fn read_text(arg: &str) -> std::io::Result<String> {
+    if arg != "-" {
+        return Ok(arg.to_string());
+    }
+    use std::io::Read;
+    let mut s = String::new();
+    std::io::stdin().take(crate::share::MAX_TEXT as u64 + 1).read_to_string(&mut s)?;
+    if s.ends_with('\n') {
+        s.pop();
+        if s.ends_with('\r') {
+            s.pop();
+        }
+    }
+    Ok(s)
 }
 
 fn downloads_dir() -> PathBuf {
@@ -144,7 +167,10 @@ pub fn run(argv: &[String]) -> i32 {
         };
     }
     let share = match a.cmd.as_str() {
-        "send" => match Share::send(&a.files, a.minutes, a.downloads) {
+        "send" => match match &a.text {
+            Some(t) => read_text(t).and_then(|t| Share::send_text(t, &a.files, a.minutes, a.downloads)),
+            None => Share::send(&a.files, a.minutes, a.downloads),
+        } {
             Ok(s) => s,
             Err(e) => {
                 eprintln!("charon: {e}");
@@ -180,8 +206,15 @@ pub fn run(argv: &[String]) -> i32 {
     let url = format!("{}://{host}:{port}/{}/", if a.http { "http" } else { "https" }, share.token);
     match &share.mode {
         share::Mode::Send(files) => {
-            let total: u64 = files.iter().map(|f| f.size).sum();
-            println!("Sharing {} file(s), {}, for {} min; each can be downloaded {} time(s).", files.len(), human(total), a.minutes, a.downloads);
+            let notes = files.iter().filter(|f| f.text.is_some()).count();
+            let real: Vec<_> = files.iter().filter(|f| f.text.is_none()).collect();
+            let total: u64 = real.iter().map(|f| f.size).sum();
+            let what = match (notes, real.len()) {
+                (0, n) => format!("{n} file(s), {}", human(total)),
+                (_, 0) => "a note".to_string(),
+                (_, n) => format!("a note and {n} file(s), {}", human(total)),
+            };
+            println!("Sharing {what} for {} min; each can be opened {} time(s).", a.minutes, a.downloads);
         }
         share::Mode::Receive { dir, max_size, .. } => {
             println!("Receiving into {} (up to {} per file) for {} min.", dir.display(), human(*max_size), a.minutes);

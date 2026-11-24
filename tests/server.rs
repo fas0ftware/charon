@@ -137,3 +137,28 @@ fn over_tls() {
     assert_eq!((st, body.as_slice()), (200, &b"over tls"[..]));
     assert_eq!(h.join().unwrap(), "everything was downloaded");
 }
+
+#[test]
+fn a_note_is_shown_once_and_never_in_the_page() {
+    let d = tempfile::tempdir().unwrap();
+    let f = d.path().join("a.txt");
+    std::fs::write(&f, b"file").unwrap();
+    let share = Share::send_text("hunter2 <b>&".into(), &[f], 5, 1).unwrap();
+    let (port, token, _stop, h, lines) = start(share, None);
+    let (st, _, body) = get(port, &format!("/{token}/"));
+    let page = String::from_utf8(body).unwrap();
+    assert_eq!(st, 200);
+    assert!(!page.contains("hunter2"), "the note is fetched on demand only");
+    assert!(page.contains("A note and 1 file(s)") && page.contains("data-i=\"0\""));
+    let (st, head, body) = get(port, &format!("/{token}/f/0"));
+    assert_eq!((st, body.as_slice()), (200, &b"hunter2 <b>&"[..]));
+    assert!(head.contains("text/plain; charset=utf-8") && head.contains("Cache-Control: no-store"));
+    assert_eq!(get(port, &format!("/{token}/f/0")).0, 410, "shown once");
+    let (st, _, page) = get(port, &format!("/{token}/"));
+    assert!(st == 200 && String::from_utf8(page).unwrap().contains("already shown"));
+    assert_eq!(get(port, &format!("/{token}/f/1")).0, 200);
+    assert_eq!(h.join().unwrap(), "everything was downloaded");
+    assert!(lines.lock().unwrap()[0].contains("was shown the note"));
+    assert!(Share::send_text(String::new(), &[], 5, 1).is_err());
+    assert!(Share::send_text("x".repeat(charon::share::MAX_TEXT + 1), &[], 5, 1).is_err());
+}

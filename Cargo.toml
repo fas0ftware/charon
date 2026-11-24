@@ -1,6 +1,6 @@
 [package]
 name = "charon"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Send files between devices on your own network: one-time, expiring, TLS links with a QR code. No cloud."
 license = "MIT"
