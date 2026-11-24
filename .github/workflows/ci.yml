@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+      - name: A real share over TLS on the runner
+        run: |
+          cargo build --quiet
+          echo "hello from CI" > /tmp/note.txt
+          XDG_DATA_HOME=/tmp/charon-data ./target/debug/charon send /tmp/note.txt --bind 127.0.0.1 --port 8765 --minutes 1 > /tmp/out.txt &
+          sleep 2
+          url=$(grep -o 'https://[^ ]*' /tmp/out.txt | head -1)
+          curl -sk "${url}f/0" -o /tmp/got.txt
+          cmp /tmp/note.txt /tmp/got.txt
+          wait
+          grep -q "everything was downloaded" /tmp/out.txt
+
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo install cargo-audit --locked
+      - run: cargo audit

@@ -113,13 +113,13 @@ pub fn human(b: u64) -> String {
     }
 }
 
-/// "2G", "500M", "10k" or bytes.
+/// "2G", "500M", "10k" or bytes; decimal units, like the sizes Charon prints.
 pub fn parse_size(s: &str) -> Option<u64> {
     let s = s.trim();
     let (num, mul) = match s.char_indices().last()? {
-        (i, 'k' | 'K') => (&s[..i], 1u64 << 10),
-        (i, 'm' | 'M') => (&s[..i], 1 << 20),
-        (i, 'g' | 'G') => (&s[..i], 1 << 30),
+        (i, 'k' | 'K') => (&s[..i], 1_000u64),
+        (i, 'm' | 'M') => (&s[..i], 1_000_000),
+        (i, 'g' | 'G') => (&s[..i], 1_000_000_000),
         _ => (s, 1),
     };
     num.trim().parse::<u64>().ok()?.checked_mul(mul)
@@ -251,8 +251,8 @@ mod tests {
 
     #[test]
     fn sizes() {
-        assert_eq!(parse_size("2G"), Some(2 << 30));
-        assert_eq!(parse_size("500m"), Some(500 << 20));
+        assert_eq!(parse_size("2G"), Some(2_000_000_000));
+        assert_eq!(parse_size("500m"), Some(500_000_000));
         assert_eq!(parse_size("1234"), Some(1234));
         assert_eq!(parse_size("x"), None);
         assert_eq!(human(3_100_000), "3.1 MB");

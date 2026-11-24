@@ -47,7 +47,7 @@ pub fn parse(argv: &[String]) -> Result<Args, String> {
         dir: None,
         minutes: 10,
         downloads: 1,
-        max_size: 2 << 30,
+        max_size: 2_000_000_000,
         uploads: 0,
         port: 8765,
         http: false,
